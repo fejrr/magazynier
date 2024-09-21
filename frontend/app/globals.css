@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@color-main:#de2424;
+@color-bright:lighten(@color-main,25%);
+@color-shadow:darken(@color-main,25%);
+
+#header {
+  background-image: url('../public/magazyn.jfif');
+  background-repeat: no-repeat;
+  background-size: cover; 
+  background-position: center;
+  text-shadow: 2px 2px 4px #000000; 
+}
+
+#nav > header {
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+.img-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(40px, 65px));
+}
+
+.w-85px {
+  width: 85px;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
