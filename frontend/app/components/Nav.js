@@ -10,14 +10,14 @@ import {
   Link as NavLink,
 } from "@nextui-org/react";
 
+const navItems = [
+  { name: "Home", path: "/" },
+  { name: "Przedmioty", path: "/items" },
+  { name: "Lokalizacje", path: "/locations" }
+];
+
 export default function Nav() {
   const pathname = usePathname();
-
-  const navItems = [
-    { name: "Home", path: "/" },
-    { name: "Przedmioty", path: "/items" },
-    { name: "Lokalizacje", path: "/locations" }
-  ];
 
   return (
     <Navbar className="justify-start mt-4" height="auto" id="nav">

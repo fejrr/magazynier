@@ -4,34 +4,25 @@ import { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import {
   Button,
-  Select,
-  SelectItem,
+  Select, SelectItem,
   Input,
   Spinner,
   Switch,
   Chip,
   Image,
-  Table,
-  TableHeader,
-  TableBody,
-  TableColumn,
-  TableRow,
-  TableCell,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  useDisclosure,
+  Card, CardHeader, CardBody, CardFooter,
+  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure,
 } from "@nextui-org/react";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Webcam from "../components/Webcam";
+
+const newItemTemplate = { name: "", quantity: 1, image: "", location: "", tags: "" };
 
 export default function Items() {
 
-  const newItemTemplate = { name: "", quantity: 1, image: "", location: "", tags: "" };
+  const pathname = usePathname();
+  const { push } = useRouter();
 
   const [items, setItems] = useState([]);
   const [locations, setLocations] = useState([]);
@@ -39,9 +30,6 @@ export default function Items() {
   const [loading, setLoading] = useState(false);
   const [capturedImage, setCapturedImage] = useState(null);
   const [showWebcam, setShowWebcam] = useState(false);
-
-  const pathname = usePathname();
-
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
 
   const getItems = async () => {
@@ -61,12 +49,12 @@ export default function Items() {
     setLoading(false);
   };
 
-  const uploadImage = async (image) => {
+  const uploadImage = async (image, name) => {
 
-    // conver base64 to image
+    const file_name = `item_${name.replace(/\s/g, "-")}.jpg`;
     const base64Response = await fetch(image);
     const blob = await base64Response.blob();
-    const file = new File([blob], "item.jpg", { type: "image/jpeg" });
+    const file = new File([blob], file_name, { type: "image/jpeg" });
 
     const formData = new FormData();
     formData.append("image", file);
@@ -84,37 +72,12 @@ export default function Items() {
 
   };
 
-  const updateItem = async (item) => {
-
-    console.log(item);
-    return
-
-    try {
-      const response = await fetch(`/api/items/item/${item._id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: item.name,
-          state: item.state,
-          image: item.image,
-        }),
-      });
-      const data = await response.json();
-
-      toast.success("Zaktualizowano ustawienia");
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
   const addItem = async () => {
 
+    onOpenChange();
 
+    newItem.image = await uploadImage(capturedImage, newItem.name) ?? newItem.image;
 
-    newItem.image = await uploadImage(capturedImage);
-    
     try {
       const response = await fetch(`/api/items/item`, {
         method: "POST",
@@ -130,24 +93,10 @@ export default function Items() {
         }),
       });
       const data = await response.json();
-      setItems([...items, data]);
+      getItems();
       setNewItem(newItemTemplate);
+      setCapturedImage(null);
       toast.success("Dodano element");
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const deleteItem = async (item) => {
-
-    try {
-      const response = await fetch(`/api/items/item/${item._id}`, {
-        method: "DELETE",
-      });
-      const data = await response.json();
-      setItems(items.filter((item) => item._id !== item._id));
-
-      toast.success("Usunięto element");
     } catch (error) {
       console.error(error);
     }
@@ -158,117 +107,46 @@ export default function Items() {
   }, []);
 
   return (
-    <>
       <div className="flex flex-col gap-6">
-        {/* Ustawienia */}
         {loading ? (
           <Spinner />
         ) : (
           <div className="flex flex-col gap-4">
             <Button color="success" size="md" onPress={onOpen}>Dodaj nowy przedmiot</Button>
-            <Table aria-label="Tabela" removeWrapper isCompact>
-              <TableHeader>
-                <TableColumn>Nazwa</TableColumn>
-                <TableColumn>Ilość</TableColumn>
-                <TableColumn>Lokalizacja</TableColumn>
-                <TableColumn>Tagi</TableColumn>
-                <TableColumn>Obraz</TableColumn>
-                <TableColumn>Akcje</TableColumn>
-              </TableHeader>
-              <TableBody>
-                {items.map((item) => (
-                  <TableRow key={item._id}>
-                    <TableCell>{item.name}</TableCell>
-                    <TableCell>
-                      <Input
-                        aria-label="Ilość"
-                        type="number"
-                        value={item.quantity}
-                        onChange={(e) =>
-                          setItems(
-                            items.map((i) =>
-                              i._id === item._id
-                                ? { ...i, quantity: e.target.value }
-                                : i
-                            )
-                          )
-                        }
-                        min="1"
-                        className="w-auto"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Select
-                        aria-label="Lokalizacja"
-                        onSelectionChange={(e) =>
-                          setItems(
-                            items.map((i) =>
-                              i._id === item._id
-                                ? { ...i, location: e.target.value }
-                                : i
-                            )
-                          )
-                        }
-                        // selectedKeys={[item.location]}
-                        className="w-auto"
-                      >
-                        {locations.map((location) => (
-                          <SelectItem key={location._id}>
-                            {location.name}
-                          </SelectItem>
-                        ))}
-                      </Select>
-                    </TableCell>
-                    <TableCell>
-                      {item.tags && item.tags.split(",").map((tag) => (
-                        <Chip key={tag} color="success">{tag}</Chip>
-                      ))}
-                    </TableCell>
-                    <TableCell>
-                      <Image src={`/api/public/items/${item.image}`} alt={item.name} width={100} />
-                    </TableCell>
-                    <TableCell>
+            <div className="gap-2 grid grid-cols-2 sm:grid-cols-4">
+              {items.map((item) => (
+                <Card shadow="sm" className="max-h-[300px]" key={item._id} isPressable onPress={() => push(`/items/${item._id}`)}>
+                  <CardHeader className="text-small justify-between pe-1">
+                    <b>{item.name}</b>
+                    <Chip className="text-default-500">{item.quantity} szt.</Chip>
+                  </CardHeader>
+                  <CardBody className="overflow-visible p-0 relative">
+                    <Image
+                      shadow="sm"
+                      radius="lg"
+                      width="100%"
+                      alt={item.name}
+                      className="w-full h-40 object-cover"
+                      src={`/api/public/items/${item.image}`}
+                    />
+                  </CardBody>
+                  <CardFooter className="text-small justify-between px-1">
+                    <div className="flex flex-col gap-2">
+                      <Chip color="secondary">{item.location.name}</Chip>
                       <div className="flex gap-2">
-                        <Button
-                          auto
-                          size="sm"
-                          color="success"
-                          onPress={() => updateItem(item)}
-                          isIconOnly
-                        >
-                          <i className="bi bi-floppy"></i>
-                        </Button>
-
-                        <Button
-                          auto
-                          size="sm"
-                          color="danger"
-                          onPress={() => deleteItem(item)}
-                          isIconOnly
-                        >
-                          <i className="bi bi-trash"></i>
-                        </Button>
-                          <Button
-                            as={Link}
-                            href={`/items/${item._id}`}
-                            auto
-                            size="sm"
-                            color="primary"
-                            isIconOnly
-                          >
-                            <i className="bi bi-pencil"></i>
-                          </Button>
+                        {item.tags && item.tags.split(",").map((tag) => (
+                          <Chip key={tag} color="primary">{tag}</Chip>
+                        ))}
                       </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                    </div>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
 
             {/* ----------------------------- MODAL ----------------------------- */}
-            {/* ----------------------------- MODAL ----------------------------- */}
 
-            <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
+            <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="lg" className="md:min-h-fit min-h-svh">
               <ModalContent>
                 <ModalHeader>Dodaj nowy przedmiot</ModalHeader>
                 <ModalBody>
@@ -281,6 +159,7 @@ export default function Items() {
                   />
                   <Input
                     label="Ilość"
+                    type="number"
                     value={newItem.quantity}
                     onChange={(e) =>
                       setNewItem({ ...newItem, quantity: e.target.value })
@@ -315,28 +194,30 @@ export default function Items() {
 
                       {capturedImage && (
                         <div className="flex flex-col gap-2">
-                        <Image
-                          src={capturedImage}
-                          alt={newItem.name}
-                          width={100}
-                        />
-                        <Button
-                          color="danger"
-                          auto
-                          onPress={() => {
-                            setCapturedImage(null)
-                            setShowWebcam(true)
-                          }
-                        }
-                        >
-                          Ponów zdjęcie
-                        </Button>
+                          <Image
+                            src={capturedImage}
+                            alt={newItem.name}
+                          />
+                          <Button
+                            color="warning"
+                            auto
+                            onPress={() => {
+                              setCapturedImage(null)
+                              setShowWebcam(true)
+                            }
+                            }
+                          >
+                            Ponów zdjęcie
+                          </Button>
                         </div>
                       )}
                     </div>
                   </div>
                 </ModalBody>
-                <ModalFooter>
+                <ModalFooter className="flex gap-4">
+                  <Button color="danger" variant="light" onPress={onOpenChange}>
+                    Anuluj
+                  </Button>
                   <Button
                     color="success"
                     auto
@@ -345,17 +226,13 @@ export default function Items() {
                       onOpenChange();
                     }}
                   >
-                    Dodaj
+                    Dodaj przedmiot
                   </Button>
                 </ModalFooter>
               </ModalContent>
             </Modal>
-
-
-
           </div>
         )}
       </div>
-    </>
   );
 }

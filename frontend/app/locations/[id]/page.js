@@ -19,34 +19,45 @@ import {
   TableCell,
 
 } from "@nextui-org/react";
-
+import Webcam from "../../components/Webcam";
 import Link from "next/link";
-import { useParams, usePathname } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
+
+const stateColorMap = {
+  true: "success",
+  false: "danger",
+};
+
+const stateValueMap = {
+  true: "Aktywna",
+  false: "Nieaktywna",
+};
 
 export default function Location() {
+
+  const { id } = useParams();
+  const pathname = usePathname();
+  const { push } = useRouter();
 
   const [items, setItems] = useState([]);
   const [location, setLocation] = useState({});
   const [loading, setLoading] = useState(false);
 
-  const { id } = useParams();
-  const pathname = usePathname();
+  const [capturedImage, setCapturedImage] = useState(null);
+  const [showWebcam, setShowWebcam] = useState(false);
 
   const getLocation = async () => {
     setLoading(true);
 
     try {
       const response = await fetch(`/api/item/location/id/${id}`);
-      const data = await response.json();
-      if (data.status === "error") {
-
+      const { data, status } = await response.json();
+      if (status !== "success") {
         push("/locations");
         return toast.error("Nie można pobrać elementu");
-
       }
 
       console.log(data);
-
       setItems(data.items);
       setLocation(data.location);
 
@@ -58,6 +69,7 @@ export default function Location() {
   };
 
   const updateLocation = async (location) => {
+  
     try {
       const response = await fetch(`/api/items/location/${location._id}`, {
         method: "PUT",
@@ -78,16 +90,22 @@ export default function Location() {
     }
   };
 
-
   const deleteLocation = async (location) => {
 
     try {
       const response = await fetch(`/api/items/location/${location._id}`, {
         method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          imageName: location.image,
+        }),
       });
       const data = await response.json();
 
-      if (data.status === "error") {
+      if (data.status !== "success") {
+        push("/locations");
         return toast.error("Nie można usunąć elementu");
       }
 
@@ -104,64 +122,107 @@ export default function Location() {
 
   return (
     <>
-      <div className="flex gap-6">
+      <div className="flex flex-col gap-6">
         {loading ? (
           <Spinner />
         ) : (
-          <div className="flex gap-4  w-full">
-            <div className="flex flex-col gap-2 md:w-3/4">
+          <>
+          <div className="flex gap-4">
+            <div className="flex flex-col gap-4 md:w-1/2">
               <Input
                 label="Nazwa"
                 value={location.name}
                 onValueChange={(e) => setLocation({ ...location, name: e })}
               />
-              <div className="flex gap-2">
-              <Input
-                label="Obraz"
-                value={location.image}
-                onValueChange={(e) => setLocation({ ...location, image: e })}
-              />
-              {location.image && (
-                <Image
-                  src={location.image}
-                  alt={location.name}
-                  width={100}
-                  height={100}
-                />
-              )}
-              </div>
               <Switch
-                label="Status"
+                aria-label="Stan"
+                color={stateColorMap[location.state]}
                 isSelected={location.state}
-                onValueChange={(e) => setLocation({ ...location, state: e })}
-              />
-              <Button
-                size="md"
-                color="success"
-                onPress={() => updateLocation(location)}
+                onValueChange={(state) => setLocation({ ...location, state })}
               >
-                Zapisz
-              </Button>
-              <Button
-                size="md"
-                color="danger"
-                onPress={() => deleteLocation(location)}
-              >
-                Usuń
-              </Button>
+                {stateValueMap[location.state]}
+              </Switch>
+              <div className="flex gap-4 mt-auto">
+                <Button
+                  size="md"
+                  color="success"
+                  onPress={() => updateLocation(location)}
+                >
+                  Zapisz
+                </Button>
+                <Button
+                  size="md"
+                  color="danger"
+                  onPress={() => deleteLocation(location)}
+                >
+                  Usuń
+                </Button>
+              </div>
             </div>
             {/* image + items container */}
-            <div className="flex flex-col gap-2 md:w-1/4">
+            <div className="flex flex-col gap-2 md:w-1/2">
+              <Image
+                src={`/api/public/locations/${location.image}`}
+                alt={location.name}
+                className="w-full object-cover h-full"
+
+              />
+              {!capturedImage &&
+                <Webcam setCapturedImage={setCapturedImage} show={showWebcam} dodajZdjecie={`${location.image ? "Zmień" : "Dodaj"} zdjęcie`} />
+              }
+
+              {capturedImage && (
+                <div className="flex flex-col gap-2">
+                  <Image
+                    src={capturedImage}
+                    alt="Nowe zdjęcie"
+                    width={100}
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      color="warning"
+                      auto
+                      onPress={() => {
+                        setCapturedImage(null)
+                        setShowWebcam(true)
+                      }
+                      }
+                    >
+                      Ponów zdjęcie
+                    </Button>
+                    <Button
+                      color="danger"
+                      auto
+                      onPress={() => {
+                        setCapturedImage(null)
+                        setShowWebcam(false)
+                      }
+                      }
+                    >
+                      Anuluj
+                    </Button>
+
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="flex flex-col gap-2 w-full">
               <h2 className="text-lg font-bold">Przypisane przedmioty</h2>
               <div className="flex flex-wrap gap-2">
-                {items.map((item) => (
+                {items.map((item, index) => (
                   <Link key={item._id} href={`/items/${item._id}`}>
+                    <Chip key={item._id} color="primary" className="cursor-pointer">
                       {item.name}
+                    </Chip>
                   </Link>
+                  // <Link key={item._id} href={`/items/${item._id}`}>
+                  //   {item.name}
+                  // </Link>
                 ))}
               </div>
             </div>
-          </div>
+          </>
         )}
       </div>
     </>

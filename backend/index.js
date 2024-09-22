@@ -5,6 +5,7 @@ const { PORT } = process.env;
 import express from "express";
 import multer from "multer";
 import path from "path";
+import fs from "fs";
 
 import cors from "cors";
 import colors from "colors";
@@ -23,12 +24,12 @@ const app = express();
 const storage = multer.diskStorage({
 
   destination: (req, file, cb) => {
-    const  destination = file.originalname === 'item.jpg' ? "items/" : "locations/";
+    const destination = file.originalname.includes('item_') ? 'items' : 'locations';
     cb(null, `uploads/${destination}`);
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9)
-    const prefix = file.originalname === 'item.jpg' ? 'item' : 'location';
+    const prefix = file.originalname.replace('.jpg', '').toLowerCase()
     cb(null, prefix + '-' + uniqueSuffix + path.extname(file.originalname));
   },
 
@@ -57,7 +58,6 @@ app.post("/api/upload", upload.single("image"), async (req, res) => {
   if (!file) {
     return res.json({ message: "No file uploaded", status: "error" });
   }
-
   res.json({ message: "File uploaded", status: "success", file });
 });
 
@@ -74,15 +74,12 @@ app.get("/api/items/:item", async (req, res) => {
   let response = null;
 
   if (item === "locations") {
-
     response = await Location.find({});
   } else if (item === "items") {
-    response = await Item.find({});
-
+    response = await Item.find({}).populate("location");
   } else {
     const locations = await Location.find({});
-    const items = await Item.find({});
-
+    const items = await Item.find({}).populate("location");
     response = { locations, items };
   }
 
@@ -97,17 +94,17 @@ app.get("/api/item/:type/:search_type/:search", async (req, res) => {
 
   const { type, search_type, search } = req.params;
 
-  let item = null;
+  let data = null;
 
   if (type === "location") {
 
     if (search_type === "name") {
-      item = {
+      data = {
         location: await Location.find({ search }),
         items: await Item.find({ location: search })
       };
     } else if (search_type === "id") {
-      item = {
+      data = {
         location: await Location.findById(search),
         items: await Item.find({ location: search })
       }
@@ -116,17 +113,16 @@ app.get("/api/item/:type/:search_type/:search", async (req, res) => {
   } else if (type === "item") {
 
     if (search_type === "name") {
-      item = await Item.find({ search }).populate("location");
+      data = await Item.find({ search }).populate("location");
     } else if (search_type === "id") {
-      item = {
+      data = {
         item : await Item.findById(search).populate("location"),
         locations : await Location.find({})
       }
     }
-
   }
 
-  res.json(item);
+  res.json({ data, status: data ? "success" : "error" });
 });
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -135,13 +131,14 @@ app.put("/api/items/:item/:id", async (req, res) => {
   await connectDB();
 
   const { item, id } = req.params;
-  const { name, state, image } = req.body;
-
+  
   let items = null;
-
+  
   if (item === "location") {
+    const { name, state, image } = req.body;
     items = await Location.findByIdAndUpdate(id, { name, state, image });
   } else if (item === "item") {
+    const { name, quantity, location, image, tags } = req.body;
     items = await Item.findByIdAndUpdate(id, { name, quantity, location, image, tags });
   }
 
@@ -154,15 +151,17 @@ app.delete("/api/items/:item/:id", async (req, res) => {
   await connectDB();
 
   const { item, id } = req.params;
+  const { imageName } = req.body;
 
   let response = null;
 
   if (item === "location") {
     response = await Location.findByIdAndDelete(id);
-    // delte image from server
+    if (imageName) fs.unlinkSync(`uploads/locations/${imageName}`);
 
   } else if (item === "item") {
     response = await Item.findByIdAndDelete(id);
+    if (imageName) fs.unlinkSync(`uploads/items/${imageName}`);
   }
   
   if (!response) {

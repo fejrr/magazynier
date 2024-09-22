@@ -8,17 +8,17 @@ import {
 
 const aspectRatios = {
     landscape: {
-        width: 1920,
-        height: 1080
+        width: 1270,
+        height: 720
     },
     portrait: {
-        width: 1080,
-        height: 1920
+        width: 720,
+        height: 1270
     }
 }
 
 
-export default function Webcam({ setCapturedImage, show=false }) {
+export default function Webcam({ setCapturedImage, show=false, dodajZdjecie="Dodaj zdjęcie" }) {
 
     const [type, setType] = useState("landscape")
     const [showWebcam, setShowWebcam] = useState(show)
@@ -70,7 +70,7 @@ export default function Webcam({ setCapturedImage, show=false }) {
                     setShowWebcam(true)
                 }}
             >
-                <i className="bi bi-camera"></i> Dodaj zdjęcie
+                <i className="bi bi-camera"></i> {dodajZdjecie}
             </Button>
             )}
         </div>

@@ -8,44 +8,38 @@ import {
   SelectItem,
   Input,
   Spinner,
-  Switch,
   Chip,
-  Avatar,
-  Table,
-  TableHeader,
-  TableBody,
-  TableColumn,
-  TableRow,
-  TableCell,
+  Image,
 
 } from "@nextui-org/react";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import { usePathname } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 
+import Webcam from "../../components/Webcam";
 
 export default function Item() {
 
+  const { id } = useParams();
+  const pathname = usePathname();
+  const { push } = useRouter();
 
   const [item, setItem] = useState({});
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const { id } = useParams();
-  const pathname = usePathname();
+  const [capturedImage, setCapturedImage] = useState(null);
+  const [showWebcam, setShowWebcam] = useState(false);
 
   const getItem = async () => {
     setLoading(true);
 
     try {
       const response = await fetch(`/api/item/item/id/${id}`);
-      const data = await response.json();
-      if (data.status === "error") {
-
+      const { data, status } = await response.json();
+      if (status !== "success") {
         push("/items");
         return toast.error("Nie można pobrać elementu");
-
       }
 
       console.log(data);
@@ -68,11 +62,11 @@ export default function Item() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name: newItem.name,
-          quantity: newItem.quantity,
-          location: newItem.location,
-          image: newItem.image,
-          tags: newItem.tags,
+          name: item.name,
+          quantity: item.quantity,
+          location: item.location,
+          image: item.image,
+          tags: item.tags,
         }),
       });
       const data = await response.json();
@@ -89,7 +83,14 @@ export default function Item() {
     try {
       const response = await fetch(`/api/items/item/${item._id}`, {
         method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          imageName: item.image,
+        }),
       });
+
       const data = await response.json();
 
       if (data.status === "error") {
@@ -113,8 +114,9 @@ export default function Item() {
         {loading ? (
           <Spinner />
         ) : (
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
+          <>
+          <div className="flex gap-4">
+            <div className="flex flex-col gap-2 w-full md:w-1/2"> {/*MAIN*/}
               <Input
                 label="Nazwa"
                 value={item.name}
@@ -122,51 +124,100 @@ export default function Item() {
               />
               <Input
                 label="Ilość"
+                type="number"
                 value={item.quantity}
                 onValueChange={(e) => setItem({ ...item, quantity: e })}
               />
-              <div className="flex gap-2">
-              <Select
-                label="Lokalizacja"
-                selectedKeys={[item.location?._id]}
-                onSelectionChange={(e) => setItem({ ...item, location: e })}
-              >
-                {locations.map((location) => (
-                  <SelectItem key={location._id}>
-                    {location.name}
-                  </SelectItem>
-                ))}
-              </Select>
-              <Link href={`/locations/${item.location?._id}`}>
-                <Button size="sm" color="success">Edytuj</Button>
-              </Link>
+              <div className="flex flex-wrap md:flex-nowrap gap-2">
+                <Select
+                  label="Lokalizacja"
+                  fullWidth
+                  selectedKeys={[item.location?._id]}
+                  onSelectionChange={(e) => setItem({ ...item, location: e })}
+                >
+                  {locations.map((location) => (
+                    <SelectItem key={location._id}>
+                      {location.name}
+                    </SelectItem>
+                  ))}
+                </Select>
+                <Link href={`/locations/${item.location?._id}`}>
+                  <Button size="sm" fullWidth color="success" className="md:h-full px-11 md:px-2">Edytuj lokalizację</Button>
+                </Link>
               </div>
-              <Input
-                label="Obraz"
-                value={item.image}
-                onValueChange={(e) => setItem({ ...item, image: e })}
-              />
               <Input
                 label="Tagi"
                 value={item.tags}
                 onValueChange={(e) => setItem({ ...item, tags: e })}
               />
-              <Button
-                size="md"
-                color="success"
-                onPress={() => updateItem(item)}
-              >
-                Zapisz
-              </Button>
-              <Button
-                size="md"
-                color="danger"
-                onPress={() => deleteItem(item)}
-              >
-                Usuń
-              </Button>
+            </div>
+            <div className="flex flex-col gap-2 md:w-1/2"> {/*IMAGE*/}
+              <Image
+                src={`/api/public/items/${item.image}`}
+                alt={item.name}
+                className="w-full object-cover h-full"
+
+              />
+
+              <div className="flex flex-col gap-2">
+                {!capturedImage &&
+                  <Webcam setCapturedImage={setCapturedImage} show={showWebcam} dodajZdjecie={`${item.image ? "Zmień" : "Dodaj"} zdjęcie`} />
+                }
+
+                {capturedImage && (
+                  <div className="flex flex-col gap-2">
+                    <Image
+                      src={capturedImage}
+                      alt="Nowe zdjęcie"
+                      width={100}
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        color="warning"
+                        auto
+                        onPress={() => {
+                          setCapturedImage(null)
+                          setShowWebcam(true)
+                        }
+                        }
+                      >
+                        Ponów zdjęcie
+                      </Button>
+                      <Button
+                        color="danger"
+                        auto
+                        onPress={() => {
+                          setCapturedImage(null)
+                          setShowWebcam(false)
+                        }
+                        }
+                      >
+                        Anuluj
+                      </Button>
+
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
+          <div className="flex gap-4">
+            <Button
+              size="md"
+              color="success"
+              onPress={() => updateItem(item)}
+            >
+              Zapisz
+            </Button>
+            <Button
+              size="md"
+              color="danger"
+              onPress={() => deleteItem(item)}
+            >
+              Usuń
+            </Button>
+          </div>
+          </>
         )}
       </div>
     </>
