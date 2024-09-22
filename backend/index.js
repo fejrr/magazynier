@@ -3,17 +3,40 @@ import "dotenv/config.js";
 const { PORT } = process.env;
 
 import express from "express";
+import multer from "multer";
+import path from "path";
+
 import cors from "cors";
 import colors from "colors";
 import connectDB from "./config/database.js";
+
 import Location from "./models/Location.js";
 import Item from "./models/Item.js";
 
 import fetch from "node-fetch";
-import e from "express";
+
+const __dirname = path.resolve();
 
 const port = PORT || 5005;
 const app = express();
+
+const storage = multer.diskStorage({
+
+  destination: (req, file, cb) => {
+    const  destination = file.originalname === 'item.jpg' ? "items/" : "locations/";
+    cb(null, `uploads/${destination}`);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9)
+    const prefix = file.originalname === 'item.jpg' ? 'item' : 'location';
+    cb(null, prefix + '-' + uniqueSuffix + path.extname(file.originalname));
+  },
+
+});
+
+const upload = multer({ storage });
+
+app.use('/api/public', express.static(path.join(__dirname, 'uploads')));
 
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Request-Private-Network", "true");
@@ -25,8 +48,18 @@ app.use(cors({ credentials: true }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+app.post("/api/upload", upload.single("image"), async (req, res) => {
+  const file = req.file;
+  if (!file) {
+    return res.json({ message: "No file uploaded", status: "error" });
+  }
+
+  res.json({ message: "File uploaded", status: "success", file });
+});
 
 app.post("/api/restart", async (req, res) => {
   res.json({ message: "Restarting", status: "success" });
@@ -69,17 +102,26 @@ app.get("/api/item/:type/:search_type/:search", async (req, res) => {
   if (type === "location") {
 
     if (search_type === "name") {
-      item = await Location.find({ search });
+      item = {
+        location: await Location.find({ search }),
+        items: await Item.find({ location: search })
+      };
     } else if (search_type === "id") {
-      item = await Location.findById(search);
+      item = {
+        location: await Location.findById(search),
+        items: await Item.find({ location: search })
+      }
     }
 
   } else if (type === "item") {
 
     if (search_type === "name") {
-      item = await Item.find({ search });
+      item = await Item.find({ search }).populate("location");
     } else if (search_type === "id") {
-      item = await Item.findById(search)
+      item = {
+        item : await Item.findById(search).populate("location"),
+        locations : await Location.find({})
+      }
     }
 
   }
@@ -88,8 +130,7 @@ app.get("/api/item/:type/:search_type/:search", async (req, res) => {
 });
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
+// UPDATE ITEM
 app.put("/api/items/:item/:id", async (req, res) => {
   await connectDB();
 
@@ -108,22 +149,28 @@ app.put("/api/items/:item/:id", async (req, res) => {
 });
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
+// DELETE ITEM
 app.delete("/api/items/:item/:id", async (req, res) => {
   await connectDB();
 
   const { item, id } = req.params;
 
+  let response = null;
+
   if (item === "location") {
-    await Location.findByIdAndDelete(id);
+    response = await Location.findByIdAndDelete(id);
+    // delte image from server
+
   } else if (item === "item") {
-    await Item.findByIdAndDelete(id);
+    response = await Item.findByIdAndDelete(id);
   }
   
-  res.json({ message: "Item deleted" });
-});
+  if (!response) {
+    return res.json({ message: "Item not found", status: "error" });
+  } 
 
+  res.json({ message: "Item deleted", status: "success" });
+});
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -146,6 +193,8 @@ app.post("/api/items/:item", async (req, res) => {
 });
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 
 app.listen(port, async () => {
   console.log(

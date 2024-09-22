@@ -20,9 +20,12 @@ import {
 
 } from "@nextui-org/react";
 
+import Link from "next/link";
 import { useParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 
-export default function Items() {
+
+export default function Item() {
 
 
   const [item, setItem] = useState({});
@@ -30,6 +33,7 @@ export default function Items() {
   const [loading, setLoading] = useState(false);
 
   const { id } = useParams();
+  const pathname = usePathname();
 
   const getItem = async () => {
     setLoading(true);
@@ -37,7 +41,17 @@ export default function Items() {
     try {
       const response = await fetch(`/api/item/item/id/${id}`);
       const data = await response.json();
-      setItem(data);
+      if (data.status === "error") {
+
+        push("/items");
+        return toast.error("Nie można pobrać elementu");
+
+      }
+
+      console.log(data);
+
+      setItem(data.item);
+      setLocations(data.locations);
 
     } catch (error) {
       console.error(error);
@@ -77,9 +91,13 @@ export default function Items() {
         method: "DELETE",
       });
       const data = await response.json();
-      setItems(items.filter((item) => item._id !== item._id));
+
+      if (data.status === "error") {
+        return toast.error("Nie można usunąć elementu");
+      }
 
       toast.success("Usunięto element");
+      push("/items");
     } catch (error) {
       console.error(error);
     }
@@ -100,33 +118,38 @@ export default function Items() {
               <Input
                 label="Nazwa"
                 value={item.name}
-                onChange={(e) => setItem({ ...item, name: e.target.value })}
+                onValueChange={(e) => setItem({ ...item, name: e })}
               />
               <Input
                 label="Ilość"
                 value={item.quantity}
-                onChange={(e) => setItem({ ...item, quantity: e.target.value })}
+                onValueChange={(e) => setItem({ ...item, quantity: e })}
               />
+              <div className="flex gap-2">
               <Select
                 label="Lokalizacja"
-                value={item.location}
-                onChange={(e) => setItem({ ...item, location: e.target.value })}
+                selectedKeys={[item.location?._id]}
+                onSelectionChange={(e) => setItem({ ...item, location: e })}
               >
                 {locations.map((location) => (
-                  <SelectItem key={location._id} value={location._id}>
+                  <SelectItem key={location._id}>
                     {location.name}
                   </SelectItem>
                 ))}
               </Select>
+              <Link href={`/locations/${item.location?._id}`}>
+                <Button size="sm" color="success">Edytuj</Button>
+              </Link>
+              </div>
               <Input
                 label="Obraz"
                 value={item.image}
-                onChange={(e) => setItem({ ...item, image: e.target.value })}
+                onValueChange={(e) => setItem({ ...item, image: e })}
               />
               <Input
                 label="Tagi"
                 value={item.tags}
-                onChange={(e) => setItem({ ...item, tags: e.target.value })}
+                onValueChange={(e) => setItem({ ...item, tags: e })}
               />
               <Button
                 size="md"

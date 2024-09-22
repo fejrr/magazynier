@@ -7,7 +7,7 @@ import {
   Input,
   Spinner,
   Switch,
-  Avatar,
+  Image,
   Table,
   TableHeader,
   TableBody,
@@ -22,6 +22,11 @@ import {
   useDisclosure,
 } from "@nextui-org/react";
 
+import Webcam from "../components/Webcam";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+
 const newItemTemplate = { name: "", state: true, image: "" };
 
 const stateColorMap = {
@@ -35,9 +40,15 @@ const stateValueMap = {
 };
 
 export default function Locations() {
+
   const [locations, setLocations] = useState([]);
   const [newLocation, setNewLocation] = useState(newItemTemplate);
   const [loading, setLoading] = useState(false);
+
+  const [capturedImage, setCapturedImage] = useState(null);
+  const [showWebcam, setShowWebcam] = useState(false);
+
+  const pathname = usePathname();
 
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
 
@@ -54,6 +65,61 @@ export default function Locations() {
     }
 
     setLoading(false);
+  };
+
+  const uploadImage = async (image) => {
+
+    // conver base64 to image
+    const base64Response = await fetch(image);
+    const blob = await base64Response.blob();
+    const file = new File([blob], "location.jpg", { type: "image/jpeg" });
+
+    const formData = new FormData();
+    formData.append("image", file);
+
+    try {
+      const response = await fetch(`/api/upload`, {
+        method: "POST",
+        body: formData,
+      });
+      const data = await response.json();
+      return data.file.filename;
+    } catch (error) {
+      console.error(error);
+    }
+
+  };
+
+  const addLocation = async () => {
+
+    onOpenChange();
+
+    let image = newLocation.image;
+
+    if (capturedImage) {
+      image = await uploadImage(capturedImage);
+      setNewLocation({ ...newLocation, image });
+    }
+
+    try {
+      const response = await fetch(`/api/items/location`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: newLocation.name,
+          state: newLocation.state,
+          image: image
+        }),
+      });
+      const data = await response.json();
+      setLocations([...locations, data]);
+      setNewLocation(newItemTemplate);
+      toast.success("Dodano element");
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const updateLocation = async (location) => {
@@ -77,27 +143,7 @@ export default function Locations() {
     }
   };
 
-  const addLocation = async () => {
-    try {
-      const response = await fetch(`/api/items/location`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: newLocation.name,
-          state: newLocation.state,
-          image: newLocation.image,
-        }),
-      });
-      const data = await response.json();
-      setLocations([...locations, data]);
-      setNewLocation(newItemTemplate);
-      toast.success("Dodano element");
-    } catch (error) {
-      console.error(error);
-    }
-  };
+
 
   const deleteLocation = async (location) => {
     try {
@@ -157,12 +203,16 @@ export default function Locations() {
                     </Button>
                   </TableCell>
                   <TableCell>
-                    <Avatar size="sm" src={location.image} />
+                    {location.image && (
+                      <Link href={`/api/public/locations/${location.image}`} passHref>
+                      <Image src={`/api/public/locations/${location.image}`} alt={location.name} width={100} />
+                      </Link>
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
                       <Button
-                        auto
+                        aria-label="Save"
                         size="sm"
                         color="success"
                         onPress={() => updateLocation(location)}
@@ -172,7 +222,7 @@ export default function Locations() {
                       </Button>
 
                       <Button
-                        auto
+                        aria-label="Delete"
                         size="sm"
                         color="danger"
                         onPress={() => deleteLocation(location)}
@@ -180,6 +230,18 @@ export default function Locations() {
                       >
                         <i className="bi bi-trash"></i>
                       </Button>
+                      <Button
+                        aria-label="Edit"
+                        as={Link}
+                        size="sm"
+                        color="primary"
+                        href={`locations/${location._id}`}
+                        isIconOnly
+                      >
+                        <i className="bi bi-pencil"></i>
+                      </Button>
+                      
+
                     </div>
                   </TableCell>
                 </TableRow>
@@ -198,14 +260,6 @@ export default function Locations() {
                     setNewLocation({ ...newLocation, name: e.target.value })
                   }
                 />
-                <Input
-                  placeholder="Obraz"
-                  aria-label="Obraz"
-                  value={newLocation.image}
-                  onChange={(e) =>
-                    setNewLocation({ ...newLocation, image: e.target.value })
-                  }
-                />
                 <Switch
                   aria-label="Stan"
                   color={stateColorMap[newLocation.state]}
@@ -214,6 +268,35 @@ export default function Locations() {
                 >
                   {stateValueMap[newLocation.state]}
                 </Switch>
+
+                <div className="flex flex-col gap-2 mt-2">
+                    <div className="flex flex-col gap-2">
+                      {!capturedImage &&
+                        <Webcam setCapturedImage={setCapturedImage} show={showWebcam} />
+                      }
+
+                      {capturedImage && (
+                        <div className="flex flex-col gap-2">
+                        <Image
+                          src={capturedImage}
+                          alt={newLocation.name}
+                          width={100}
+                        />
+                        <Button
+                          color="danger"
+                          auto
+                          onPress={() => {
+                            setCapturedImage(null)
+                            setShowWebcam(true)
+                          }
+                        }
+                        >
+                          Ponów zdjęcie
+                        </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
               </ModalBody>
               <ModalFooter>
                 <Button color="success" auto onPress ={addLocation}>
