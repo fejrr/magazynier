@@ -11,12 +11,13 @@ import {
   Chip,
   Image,
 
-} from "@nextui-org/react";
+} from "@heroui/react";
 
 import Link from "next/link";
 import { useParams, usePathname, useRouter } from "next/navigation";
 
 import Webcam from "../../components/Webcam";
+import QRCode from "../../components/QRCodeGen";
 
 export default function Item() {
 
@@ -41,7 +42,6 @@ export default function Item() {
         push("/items");
         return toast.error("Nie można pobrać elementu");
       }
-
       console.log(data);
 
       setItem(data.item);
@@ -76,7 +76,6 @@ export default function Item() {
       console.error(error);
     }
   };
-
 
   const deleteItem = async (item) => {
 
@@ -113,111 +112,116 @@ export default function Item() {
       <div className="flex flex-col gap-6">
         {loading ? (
           <Spinner />
-        ) : (
+        ) : item && (
           <>
-          <div className="flex gap-4">
-            <div className="flex flex-col gap-2 w-full md:w-1/2"> {/*MAIN*/}
-              <Input
-                label="Nazwa"
-                value={item.name}
-                onValueChange={(e) => setItem({ ...item, name: e })}
-              />
-              <Input
-                label="Ilość"
-                type="number"
-                value={item.quantity}
-                onValueChange={(e) => setItem({ ...item, quantity: e })}
-              />
-              <div className="flex flex-wrap md:flex-nowrap gap-2">
-                <Select
-                  label="Lokalizacja"
-                  fullWidth
-                  selectedKeys={[item.location?._id]}
-                  onSelectionChange={(e) => setItem({ ...item, location: e })}
-                >
-                  {locations.map((location) => (
-                    <SelectItem key={location._id}>
-                      {location.name}
-                    </SelectItem>
-                  ))}
-                </Select>
-                <Link href={`/locations/${item.location?._id}`}>
-                  <Button size="sm" fullWidth color="success" className="md:h-full px-11 md:px-2">Edytuj lokalizację</Button>
-                </Link>
-              </div>
-              <Input
-                label="Tagi"
-                value={item.tags}
-                onValueChange={(e) => setItem({ ...item, tags: e })}
-              />
+            <div className="flex gap-4">
+              <div className="flex flex-col gap-2 w-full md:w-1/2"> {/*MAIN*/}
+                <Input
+                  label="Nazwa"
+                  value={item.name}
+                  onValueChange={(e) => setItem({ ...item, name: e })}
+                />
+                <Input
+                  label="Ilość"
+                  type="number"
+                  value={item.quantity}
+                  onValueChange={(e) => setItem({ ...item, quantity: e })}
+                />
+                <div className="flex flex-wrap md:flex-nowrap gap-2">
+                  <Select
+                    label="Lokalizacja"
+                    fullWidth
+                    selectedKeys={[item.location]}
+                    onSelectionChange={(e) => setItem({ ...item, location: [...e][0] })}
+                  >
+                    {locations.map((location) => (
+                      <SelectItem key={location._id}>
+                        {location.name}
+                      </SelectItem>
+                    ))}
+                  </Select>
+                  <Link href={`/locations/${item.location}`}>
+                    <Button size="sm" fullWidth color="success" className="md:h-full px-11 md:px-2">Edytuj lokalizację</Button>
+                  </Link>
+                </div>
+                <Input
+                  label="Tagi"
+                  value={item.tags}
+                  onValueChange={(e) => setItem({ ...item, tags: e })}
+                />
+              <div className="flex gap-4 mt-5">
+              <Button
+                size="md"
+                color="success"
+                onPress={() => updateItem(item)}
+              >
+                Zapisz
+              </Button>
+              <Button
+                size="md"
+                color="danger"
+                onPress={() => deleteItem(item)}
+              >
+                Usuń
+              </Button>
             </div>
-            <div className="flex flex-col gap-2 md:w-1/2"> {/*IMAGE*/}
-              <Image
-                src={`/api/public/items/${item.image}`}
-                alt={item.name}
-                className="w-full object-cover h-full"
+              </div>
+              <div className="flex flex-col gap-2 md:w-1/2"> {/*IMAGE*/}
+                <QRCode />
 
-              />
-
-              <div className="flex flex-col gap-2">
-                {!capturedImage &&
-                  <Webcam setCapturedImage={setCapturedImage} show={showWebcam} dodajZdjecie={`${item.image ? "Zmień" : "Dodaj"} zdjęcie`} />
-                }
-
-                {capturedImage && (
-                  <div className="flex flex-col gap-2">
-                    <Image
-                      src={capturedImage}
-                      alt="Nowe zdjęcie"
-                      width={100}
-                    />
-                    <div className="flex gap-2">
-                      <Button
-                        color="warning"
-                        auto
-                        onPress={() => {
-                          setCapturedImage(null)
-                          setShowWebcam(true)
-                        }
-                        }
-                      >
-                        Ponów zdjęcie
-                      </Button>
-                      <Button
-                        color="danger"
-                        auto
-                        onPress={() => {
-                          setCapturedImage(null)
-                          setShowWebcam(false)
-                        }
-                        }
-                      >
-                        Anuluj
-                      </Button>
-
-                    </div>
-                  </div>
+                {item.image && (
+                  <Image
+                    src={`/api/public/items/${item.image}`}
+                    alt={item.name}
+                    className="w-full object-cover h-full"
+                  />
                 )}
+
+                <div className="flex flex-col gap-2">
+                  {!capturedImage &&
+                    <Webcam setCapturedImage={setCapturedImage} show={showWebcam} dodajZdjecie={`${item.image ? "Zmień" : "Dodaj"} zdjęcie`} />
+                  }
+
+                  {capturedImage && (
+                    <div className="flex flex-col gap-2">
+                      <Image
+                        src={capturedImage}
+                        alt="Nowe zdjęcie"
+                        width={100}
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          color="warning"
+                          auto
+                          onPress={() => {
+                            setCapturedImage(null)
+                            setShowWebcam(true)
+                          }
+                          }
+                        >
+                          Ponów zdjęcie
+                        </Button>
+                        <Button
+                          color="danger"
+                          auto
+                          onPress={() => {
+                            setCapturedImage(null)
+                            setShowWebcam(false)
+                          }
+                          }
+                        >
+                          Anuluj
+                        </Button>
+
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-          <div className="flex gap-4">
-            <Button
-              size="md"
-              color="success"
-              onPress={() => updateItem(item)}
-            >
-              Zapisz
-            </Button>
-            <Button
-              size="md"
-              color="danger"
-              onPress={() => deleteItem(item)}
-            >
-              Usuń
-            </Button>
-          </div>
           </>
+
+
         )}
       </div>
     </>

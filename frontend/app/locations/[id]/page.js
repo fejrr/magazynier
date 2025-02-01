@@ -18,8 +18,9 @@ import {
   TableRow,
   TableCell,
 
-} from "@nextui-org/react";
+} from "@heroui/react";
 import Webcam from "../../components/Webcam";
+import QRCode from "../../components/QRCodeGen";
 import Link from "next/link";
 import { useParams, usePathname, useRouter } from "next/navigation";
 
@@ -69,7 +70,7 @@ export default function Location() {
   };
 
   const updateLocation = async (location) => {
-  
+
     try {
       const response = await fetch(`/api/items/location/${location._id}`, {
         method: "PUT",
@@ -120,13 +121,12 @@ export default function Location() {
     getLocation();
   }, []);
 
-  return (
-    <>
-      <div className="flex flex-col gap-6">
-        {loading ? (
-          <Spinner />
-        ) : (
-          <>
+  return (<>
+    <div className="flex flex-col gap-6">
+      {loading ? (
+        <Spinner />
+      ) : (
+        <>
           <div className="flex gap-4">
             <div className="flex flex-col gap-4 md:w-1/2">
               <Input
@@ -160,28 +160,28 @@ export default function Location() {
               </div>
             </div>
             {/* image + items container */}
-            <div className="flex flex-col gap-2 md:w-1/2">
-              <Image
-                src={`/api/public/locations/${location.image}`}
-                alt={location.name}
-                className="w-full object-cover h-full"
-
-              />
+            <div className="flex flex-col gap-3 md:w-1/2">
+              <QRCode/>
+              {location.image && (
+                <Image
+                  src={`/api/public/locations/${location.image}`}
+                  alt={location.name}
+                />
+              )}
               {!capturedImage &&
                 <Webcam setCapturedImage={setCapturedImage} show={showWebcam} dodajZdjecie={`${location.image ? "Zmień" : "Dodaj"} zdjęcie`} />
               }
 
               {capturedImage && (
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-3">
                   <Image
                     src={capturedImage}
                     alt="Nowe zdjęcie"
-                    width={100}
                   />
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
                     <Button
                       color="warning"
-                      auto
+                      className="md:w-auto w-full"
                       onPress={() => {
                         setCapturedImage(null)
                         setShowWebcam(true)
@@ -192,7 +192,7 @@ export default function Location() {
                     </Button>
                     <Button
                       color="danger"
-                      auto
+                      className="md:w-auto w-full"
                       onPress={() => {
                         setCapturedImage(null)
                         setShowWebcam(false)
@@ -208,23 +208,22 @@ export default function Location() {
             </div>
           </div>
           <div className="flex flex-col gap-2 w-full">
-              <h2 className="text-lg font-bold">Przypisane przedmioty</h2>
-              <div className="flex flex-wrap gap-2">
-                {items.map((item, index) => (
-                  <Link key={item._id} href={`/items/${item._id}`}>
-                    <Chip key={item._id} color="primary" className="cursor-pointer">
-                      {item.name}
-                    </Chip>
-                  </Link>
-                  // <Link key={item._id} href={`/items/${item._id}`}>
-                  //   {item.name}
-                  // </Link>
-                ))}
-              </div>
+            <h2 className="text-lg font-bold">Przypisane przedmioty</h2>
+            <div className="flex flex-wrap gap-2">
+              {items.map((item, index) => (
+                (<Link key={item._id} href={`/items/${item._id}`}>
+                  <Chip key={item._id} color="primary" className="cursor-pointer">
+                    {item.name}
+                  </Chip>
+                </Link>)
+                // <Link key={item._id} href={`/items/${item._id}`}>
+                //   {item.name}
+                // </Link>
+              ))}
             </div>
-          </>
-        )}
-      </div>
-    </>
-  );
+          </div>
+        </>
+      )}
+    </div>
+  </>);
 }

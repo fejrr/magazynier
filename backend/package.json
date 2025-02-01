@@ -1,12 +1,12 @@
 {
-  "name": "opluwacz2",
+  "name": "magazynier",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "start": "node index.js"
   },
   "author": "",
   "license": "ISC",

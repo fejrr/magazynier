@@ -8,7 +8,7 @@ import {
   NavbarItem,
   Button,
   Link as NavLink,
-} from "@nextui-org/react";
+} from "@heroui/react";
 
 const navItems = [
   { name: "Home", path: "/" },

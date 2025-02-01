@@ -11,7 +11,9 @@ import {
   Card, CardHeader, CardBody, CardFooter,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure,
   Chip,
-} from "@nextui-org/react";
+  Autocomplete,
+  AutocompleteItem,
+} from "@heroui/react";
 
 import Webcam from "../components/Webcam";
 
@@ -86,7 +88,9 @@ export default function Locations() {
 
     onOpenChange();
 
-    newLocation.image = await uploadImage(capturedImage, newLocation.name) ?? newLocation.image;
+    if (capturedImage) {
+      newLocation.image = (await uploadImage(capturedImage, newLocation.name));
+    }
 
     try {
       const response = await fetch(`/api/items/location`, {
@@ -110,6 +114,17 @@ export default function Locations() {
     }
   };
 
+  const handleSelectionChange = (value) => {
+    if (!value) {
+      return;
+    }
+
+    const selectedLocation = locations.find((result) => result._id === value);
+    if (selectedLocation.type === "location") {
+      push(`/locations/${selectedLocation._id}`);
+    }
+  };
+
   useEffect(() => {
     getLocations();
   }, []);
@@ -123,10 +138,27 @@ export default function Locations() {
         <Spinner />
       ) : (
         <div className="flex flex-col gap-4">
-          <Button color="success" onPress={onOpen}>Dodaj nową lokalizację</Button>
-          <div className="gap-2 grid grid-cols-2 sm:grid-cols-4">
+          <div className="flex gap-4">
+            <Autocomplete
+              aria-label="Szukaj"
+              variant="bordered"
+              startContent={<i className="bi bi-search" />}
+              className="w-full md:w-auto"
+              size="md"
+              onSelectionChange={(e) => handleSelectionChange(e)}
+            >
+              {locations.map((result) => (
+                <AutocompleteItem key={result._id}>
+                  {result.name}
+                </AutocompleteItem>
+              ))}
+            </Autocomplete>
+            <Button color="success" size="md" onPress={onOpen} isIconOnly>
+            <i className="bi bi-plus-lg"></i>
+            </Button>
+          </div>
+          <div className="gap-2 grid grid-cols-2 sm:grid-cols-5">
             {locations.map((item) => (
-
               <Card shadow="sm" className="max-h-[300px]" key={item._id} isPressable onPress={() => push(`/locations/${item._id}`)}>
                 <CardBody className="overflow-visible p-0 relative">
                   <Image
@@ -135,7 +167,7 @@ export default function Locations() {
                     width="100%"
                     alt={item.name}
                     className="w-full h-40 object-cover"
-                    src={`/api/public/locations/${item.image}`}
+                    src={`/api/public/locations/${ item.image != "" ? item.image : "brak-zdjecia.png"}`}
                   />
                 </CardBody>
                 <CardFooter className={`text-small ${item.state ? "bg-green-500 text-black" : "bg-red-500"}`}>
@@ -146,7 +178,7 @@ export default function Locations() {
           </div>
 
           {/* ----------------------------- MODAL ----------------------------- */}
-          <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="lg" className="md:min-h-fit min-h-svh">
+          <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="lg" className="md:min-h-fit min-h-fit">
             <ModalContent>
               <ModalHeader>Dodaj nową lokalizację</ModalHeader>
               <ModalBody>
@@ -157,6 +189,7 @@ export default function Locations() {
                   onChange={(e) =>
                     setNewLocation({ ...newLocation, name: e.target.value })
                   }
+                  autoFocus={false}
                 />
                 <Switch
                   aria-label="Stan"

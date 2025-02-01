@@ -1,0 +1,13 @@
+#header {
+    background-image: url('./supereathflag.jpg'); 
+
+    background-repeat: no-repeat;
+    background-size: cover; 
+    background-position: center;
+    text-shadow: 2px 2px 4px #000000; 
+}
+
+.img-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+}

@@ -14,7 +14,8 @@ const ItemSchema = new Schema({
     location: {
         type: Schema.Types.ObjectId,
         ref: "Location",
-        required: true
+        required: true,
+        default: null
     },
     tags: {
         type: String, 

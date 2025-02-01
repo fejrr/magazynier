@@ -1,16 +1,20 @@
-/** @type {import('next').NextConfig} */
+import withPWA from "@ducanh2912/next-pwa";
 
-
-const nextConfig = {
-    async rewrites() {
-        return [
-          {
-            source: '/api/:path*',
-            destination: 'http://localhost:5005/api/:path*',
-          },
-        ]
-    }
+const pwaConfig = {
+  dest: "public",
 };
 
-export default nextConfig;
+const withPWAConfigured = withPWA(pwaConfig);
+
+export default withPWAConfigured({
+  // Your Next.js config
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'http://localhost:5008/api/:path*',
+      },
+    ]
+}
+});
  
