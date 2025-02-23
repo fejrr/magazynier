@@ -54,40 +54,7 @@ export default function Item() {
     setLoading(false);
   };
 
-  const uploadImage = async (image, name) => {
-
-    const file_name = `item.jpg`;
-    const base64Response = await fetch(image);
-    const blob = await base64Response.blob();
-    const file = new File([blob], file_name, { type: "image/jpeg" });
-    const formData = new FormData();
-    formData.append("file", file);
-    
-    try {
-      const response = await fetch(`/api/upload`, {
-        method: "POST",
-        body: formData,
-      });
-      const data = await response.json();
-      console.log(data);
-      return data.file.filename;
-    } catch (error) {
-      console.error(error);
-    }
-
-  };
-
   const updateItem = async (item) => {
-
-    item.oldImage = null;
-
-    if (capturedImage) {
-      item.oldImage = item.image;
-      item.image = await uploadImage(capturedImage, item.name);
-    }
-
-    console.log(item);
-
     try {
       const response = await fetch(`/api/items/item/${item._id}`, {
         method: "PUT",
@@ -99,15 +66,12 @@ export default function Item() {
           quantity: item.quantity,
           location: item.location,
           image: item.image,
-          oldImage: item.oldImage,
           tags: item.tags,
         }),
       });
       const data = await response.json();
-      setItem(data);
-      setCapturedImage(null);
-      setShowWebcam(false);
-      toast.success("Zaktualizowano element");
+
+      toast.success("Zaktualizowano ustawienia");
     } catch (error) {
       console.error(error);
     }

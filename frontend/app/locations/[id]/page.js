@@ -69,7 +69,35 @@ export default function Location() {
     setLoading(false);
   };
 
+  const uploadImage = async (image, name) => {
+
+    const file_name = `location.jpg`;
+    const base64Response = await fetch(image);
+    const blob = await base64Response.blob();
+    const file = new File([blob], file_name, { type: "image/jpeg" });
+    const formData = new FormData();
+    formData.append("file", file);
+    
+    try {
+      const response = await fetch(`/api/upload`, {
+        method: "POST",
+        body: formData,
+      });
+      const data = await response.json();
+      return data.file.filename;
+    } catch (error) {
+      console.error(error);
+    }
+
+  };
+
   const updateLocation = async (location) => {
+
+    location.oldImage = null;
+    if (capturedImage) {
+      location.oldImage = location.image;
+      location.image = await uploadImage(capturedImage, location.name);
+    }
 
     try {
       const response = await fetch(`/api/items/location/${location._id}`, {
@@ -81,11 +109,15 @@ export default function Location() {
           name: location.name,
           state: location.state,
           image: location.image,
+          oldImage: location.oldImage,
         }),
       });
       const data = await response.json();
+      setLocation(data);
+      setCapturedImage(null);
+      setShowWebcam(false);
+      toast.success("Zaktualizowano lokalizację");
 
-      toast.success("Zaktualizowano ustawienia");
     } catch (error) {
       console.error(error);
     }

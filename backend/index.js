@@ -13,6 +13,7 @@ import connectDB from "./config/database.js";
 
 import Location from "./models/Location.js";
 import Item from "./models/Item.js";
+import Tag from "./models/Tag.js";
 
 import fetch from "node-fetch";
 
@@ -23,14 +24,14 @@ const __dirname = path.resolve();
 const storage = multer.diskStorage({
 
   destination: (req, file, cb) => {
-    const destination = file.originalname.includes('item_') ? 'items' : 'locations';
+    const destination = file.originalname.includes('item') ? 'items' : 'locations';
     cb(null, `uploads/${destination}`);
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9)
     const prefix = file.originalname.replace('.jpg', '').toLowerCase()
     let fileName  = prefix + '-' + uniqueSuffix + path.extname(file.originalname)
-    fileName = Buffer.from(fileName, 'latin1').toString('utf8');
+    // fileName = Buffer.from(fileName, 'latin1').toString('utf8');
     cb(null, fileName.toLowerCase());
   },
 
@@ -58,8 +59,9 @@ app.get("/api", async (req, res) => {
   res.json({ message: "API is running...", status: "success" });
 });
 
-app.post("/api/upload", upload.single("image"), async (req, res) => {
+app.post("/api/upload", upload.single("file"), async (req, res) => {
   const file = req.file;
+  console.log(file);
   if (!file) {
     return res.json({ message: "No file uploaded", status: "error" });
   }
@@ -71,6 +73,9 @@ app.post("/api/restart", async (req, res) => {
   process.exit();
 });
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ITEMS
+
 app.get("/api/items/:item", async (req, res) => {
 
   const { item } = req.params;
@@ -80,10 +85,10 @@ app.get("/api/items/:item", async (req, res) => {
   if (item === "locations") {
     response = await Location.find({});
   } else if (item === "items") {
-    response = await Item.find({}).populate("location");
+    response = await Item.find({}).populate("location").populate("tags");
   } else {
     const locations = await Location.find({});
-    const items = await Item.find({}).populate("location");
+    const items = await Item.find({}).populate("location").populate("tags");
     response = { locations, items };
   }
 
@@ -138,11 +143,19 @@ app.put("/api/items/:item/:id", async (req, res) => {
   let items = null;
   
   if (item === "location") {
-    const { name, state, image } = req.body;
-    items = await Location.findByIdAndUpdate(id, { name, state, image });
+    const { name, state, image, oldImage } = req.body;
+    await Location.findByIdAndUpdate(id, { name, state, image });
+    if (oldImage && fs.existsSync(`uploads/locations/${oldImage}`)) {
+      fs.unlinkSync(`uploads/locations/${oldImage}`);
+    }
+    items = await Location.findById(id);
   } else if (item === "item") {
-    const { name, quantity, location, image, tags } = req.body;
-    items = await Item.findByIdAndUpdate(id, { name, quantity, location, image, tags });
+    const { name, quantity, location, image, oldImage, tags } = req.body;
+    await Item.findByIdAndUpdate(id, { name, quantity, location, image, tags });
+    if (oldImage && fs.existsSync(`uploads/items/${oldImage}`)) {
+      fs.unlinkSync(`uploads/items/${oldImage}`);
+    }
+    items = await Item.findById(id).populate("location");
   }
 
   res.json(items);
@@ -180,7 +193,7 @@ app.delete("/api/items/:item/:id", async (req, res) => {
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+// ADD ITEM
 app.post("/api/items/:item", async (req, res) => {
 
   const { item } = req.params;
@@ -188,14 +201,52 @@ app.post("/api/items/:item", async (req, res) => {
 
   if (item === "location") {
     const { name, state, image } = req.body;
-    console.log(image)
     items = await Location.create({ name, state, image });
   } else if (item === "item") {
     const { name, quantity, location, image, tags } = req.body;
+    console.log(req.body);
     items = await Item.create({ name, quantity, location, image, tags });
   }
 
   res.json(items);
+});
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+// TAGS
+app.get("/api/tags", async (req, res) => {
+
+  const tags = await Tag.find({});
+  res.json(tags);
+});
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ADD TAG
+app.post("/api/tags", async (req, res) => {
+
+  const { name, color } = req.body;
+  const tag = await Tag.create({ name, color });
+  res.json(tag);
+});
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+// DELETE TAG
+app.delete("/api/tags/:id", async (req, res) => {
+
+  const { id } = req.params;
+  const response = await Tag.findByIdAndDelete(id);
+  if (!response) {
+    return res.json({ message: "Tag not found", status: "error" });
+  }
+  res.json({ message: "Tag deleted", status: "success" });
+});
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+// UPDATE TAG
+app.put("/api/tags/:id", async (req, res) => {
+
+  const { id } = req.params;
+  const { name, color } = req.body;
+  const tag = await Tag.findByIdAndUpdate(id, { name, color });
+  res.json(tag);
 });
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////

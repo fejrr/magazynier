@@ -66,13 +66,13 @@ export default function Items() {
   };
 
   const uploadImage = async (image, name) => {
-    const file_name = `item_${name.replace(/\s/g, "-")}.jpg`;
+    const file_name = `item.jpg`;
     const base64Response = await fetch(image);
     const blob = await base64Response.blob();
     const file = new File([blob], file_name, { type: "image/jpeg" });
 
     const formData = new FormData();
-    formData.append("image", file);
+    formData.append("file", file);
 
     try {
       const response = await fetch(`/api/upload`, {
@@ -217,12 +217,13 @@ export default function Items() {
             isOpen={isOpen}
             onOpenChange={onOpenChange}
             size="lg"
-            className="md:min-h-fit min-h-fit"
+            className="md:min-h-fit min-h-full"
             isDismissable={false}
             isKeyboardDismissDisabled={true}
+            placement="center"
           >
             <ModalContent>
-              <ModalHeader>Dodaj nowy przedmiott</ModalHeader>
+              <ModalHeader>Dodaj nowy przedmiot</ModalHeader>
               <ModalBody>
                 <Input
                   label="Nazwa"
@@ -262,7 +263,7 @@ export default function Items() {
                   }
                 />
 
-                <div className="flex flex-col gap-2 mt-2">
+                {/* <div className="flex flex-col gap-2 mt-2"> */}
                   <div className="flex flex-col gap-2">
                     {!capturedImage && (
                       <Webcam
@@ -273,7 +274,7 @@ export default function Items() {
 
                     {capturedImage && (
                       <div className="flex flex-col gap-2">
-                        <Image src={capturedImage} alt={newItem.name} />
+                        <Image src={capturedImage} alt={newItem.name} width={100} />
                         <Button
                           color="warning"
                           autoSave=""
@@ -287,7 +288,7 @@ export default function Items() {
                       </div>
                     )}
                   </div>
-                </div>
+                {/* </div> */}
               </ModalBody>
               <ModalFooter className="flex gap-4">
                 <Button color="danger" variant="light" onPress={onOpenChange}>

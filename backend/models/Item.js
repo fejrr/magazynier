@@ -18,8 +18,10 @@ const ItemSchema = new Schema({
         default: null
     },
     tags: {
-        type: String, 
-        required: false
+        type: [Schema.Types.ObjectId],
+        ref: "Tag",
+        required: false,
+        default: []
     },
     image: {
         type: String, 

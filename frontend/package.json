@@ -11,18 +11,18 @@
   },
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",
-    "@heroui/react": "2.6.14",
+    "@heroui/react": "^2.7.2",
     "@internationalized/date": "^3.5.2",
     "@react-aria/i18n": "^3.10.2",
     "bootstrap-icons": "^1.11.3",
-    "framer-motion": "^11.5.5",
+    "framer-motion": "^12.4.4",
     "html5-qrcode": "^2.3.8",
     "next": "15.1.6",
     "next-pwa": "^5.6.0",
     "qrcode": "^1.5.4",
     "react": "19.0.0",
     "react-dom": "19.0.0",
-    "react-toastify": "^10.0.5",
+    "react-toastify": "^11.0.3",
     "react-webcam": "^7.2.0"
   },
   "devDependencies": {

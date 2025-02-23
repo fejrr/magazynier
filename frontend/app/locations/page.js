@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { toast } from "react-toastify";
 import {
   Button,
@@ -13,6 +13,7 @@ import {
   Chip,
   Autocomplete,
   AutocompleteItem,
+  form,
 } from "@heroui/react";
 
 import Webcam from "../components/Webcam";
@@ -43,8 +44,34 @@ export default function Locations() {
 
   const [capturedImage, setCapturedImage] = useState(null);
   const [showWebcam, setShowWebcam] = useState(false);
+  const [filterValue, setFilterValue] = useState("");
 
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
+
+  const hasSearchFilter = Boolean(filterValue);
+  const filteredItems = useMemo(() => {
+    let filteredItems = [...locations];
+
+    if (hasSearchFilter) {
+      filteredItems = filteredItems.filter((item) =>
+        item.name.toLowerCase().includes(filterValue.toLowerCase() || "")
+      )
+    }
+
+    return filteredItems;
+  }, [locations, filterValue]);
+
+  const onSearchChange = useCallback((value) => {
+    if (value) {
+      setFilterValue(value);
+    } else {
+      setFilterValue("");
+    }
+  }, []);
+
+  const onClear = useCallback(() => {
+    setFilterValue("");
+  }, []);
 
   const getLocations = async () => {
     setLoading(true);
@@ -63,13 +90,12 @@ export default function Locations() {
 
   const uploadImage = async (image, name) => {
 
-    const file_name = `location_${name.replace(/\s/g, "-")}.jpg`;
+    const file_name = `location.jpg`;
     const base64Response = await fetch(image);
     const blob = await base64Response.blob();
     const file = new File([blob], file_name, { type: "image/jpeg" });
-
     const formData = new FormData();
-    formData.append("image", file);
+    formData.append("file", file);
 
     try {
       const response = await fetch(`/api/upload`, {
@@ -138,27 +164,24 @@ export default function Locations() {
         <Spinner />
       ) : (
         <div className="flex flex-col gap-4">
-          <div className="flex gap-4">
-            <Autocomplete
-              aria-label="Szukaj"
-              variant="bordered"
-              startContent={<i className="bi bi-search" />}
-              className="w-full md:w-auto"
-              size="md"
-              onSelectionChange={(e) => handleSelectionChange(e)}
-            >
-              {locations.map((result) => (
-                <AutocompleteItem key={result._id}>
-                  {result.name}
-                </AutocompleteItem>
-              ))}
-            </Autocomplete>
-            <Button color="success" size="md" onPress={onOpen} isIconOnly>
-            <i className="bi bi-plus-lg"></i>
-            </Button>
+          <div className="flex justify-between gap-3 items-end">
+            <Input
+              isClearable
+              className="w-full sm:max-w-[44%]"
+              placeholder="Szukaj po nazwie"
+              startContent={<i className="bi bi-search"></i>}
+              value={filterValue}
+              onClear={() => onClear()}
+              onValueChange={onSearchChange}
+            />
+            <div className="flex gap-3">
+              <Button color="success" size="md" onPress={onOpen} endContent={<i className="bi bi-plus-lg"></i>}>
+                Dodaj nowy
+              </Button>
+            </div>
           </div>
           <div className="gap-2 grid grid-cols-2 sm:grid-cols-5">
-            {locations.map((item) => (
+            {filteredItems.map((item) => (
               <Card shadow="sm" className="max-h-[300px]" key={item._id} isPressable onPress={() => push(`/locations/${item._id}`)}>
                 <CardBody className="overflow-visible p-0 relative">
                   <Image
@@ -167,7 +190,7 @@ export default function Locations() {
                     width="100%"
                     alt={item.name}
                     className="w-full h-40 object-cover"
-                    src={`/api/public/locations/${ item.image != "" ? item.image : "brak-zdjecia.png"}`}
+                    src={`/api/public/locations/${item.image != "" ? item.image : "brak-zdjecia.png"}`}
                   />
                 </CardBody>
                 <CardFooter className={`text-small ${item.state ? "bg-green-500 text-black" : "bg-red-500"}`}>
@@ -178,7 +201,14 @@ export default function Locations() {
           </div>
 
           {/* ----------------------------- MODAL ----------------------------- */}
-          <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="lg" className="md:min-h-fit min-h-fit">
+          <Modal
+            isOpen={isOpen}
+            onOpenChange={onOpenChange}
+            size="lg"
+            className="md:min-h-fit min-h-fit"
+            isDismissable={false}
+            isKeyboardDismissDisabled={true}
+          >
             <ModalContent>
               <ModalHeader>Dodaj nową lokalizację</ModalHeader>
               <ModalBody>
@@ -231,7 +261,7 @@ export default function Locations() {
               </ModalBody>
               <ModalFooter className="flex gap-4">
                 <Button color="danger" variant="light" onPress={onOpenChange}>
-                  Anuluj 
+                  Anuluj
                 </Button>
                 <Button color="success" auto onPress={addLocation}>
                   Dodaj

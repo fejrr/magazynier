@@ -9,11 +9,14 @@ import {
   Button,
   Link as NavLink,
 } from "@heroui/react";
+import TransitionLink from "./TransitionLink";
 
 const navItems = [
   { name: "Home", path: "/" },
-  { name: "Przedmioty", path: "/items" },
-  { name: "Lokalizacje", path: "/locations" }
+  // { name: "Przedmioty", path: "/items" },
+  { name: "Przedmioty test", path: "/itemst" },
+  { name: "Lokalizacje", path: "/locations" },
+  { name: "Tagi", path: "/tags" },
 ];
 
 export default function Nav() {
@@ -24,7 +27,14 @@ export default function Nav() {
       <NavbarContent className="flex flex-wrap h-full gap-2 md:gap-4">
         {navItems.map((item) => (
           <NavbarItem key={item.name}>
-            <Button as={Link} size="sm" color="primary" variant={pathname === item.path ? 'solid' : 'bordered'} href={item.path}>{item.name}</Button>
+            <TransitionLink
+              size="sm"
+              color="primary"
+              variant={pathname === item.path ? "solid" : "bordered"}
+              href={item.path}
+            >
+              {item.name}
+            </TransitionLink>
           </NavbarItem>
         ))}
       </NavbarContent>

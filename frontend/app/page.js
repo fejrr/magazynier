@@ -11,11 +11,12 @@ import {
   Input,
   Autocomplete,
   AutocompleteItem,
+  Progress,
 } from "@heroui/react";
 
 import { useRouter } from "next/navigation";
-
 import QrCodeScanner from "./components/QRCodeScanner";
+import LoadingBar from "./components/LoadingBar";
 
 const Home = () => {
   const { push } = useRouter();
@@ -79,7 +80,7 @@ const Home = () => {
 
   return (
     <div className="container">
-      {loading && <Spinner />}
+      {loading && <LoadingBar />}
       <div className="flex flex-col justify-center gap-4">
         <Autocomplete
           aria-label="Szukaj"
@@ -97,7 +98,7 @@ const Home = () => {
         <div className="flex flex-col gap-2">
           {showScanner && <QrCodeScanner />}
           <Button
-            onClick={() => setShowScanner(!showScanner)}
+            onPress={() => setShowScanner(!showScanner)}
             size="sm"
             className="mb-2 w-full md:w-[304px]"
           >

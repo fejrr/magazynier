@@ -8,26 +8,14 @@ import "react-toastify/dist/ReactToastify.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 
 const roboto = Roboto({ weight: "400", subsets: ["latin-ext"] });
-
-// export const metadata = {
-//   title: "Magazynier",
-//   description: "Magazynier - aplikacja do zarządzania magazynem",
-// };
-
-// import type { Metadata, Viewport } from "next";
-
 const APP_NAME = "Magazynier";
 const APP_DEFAULT_TITLE = "Magazynier";
 const APP_TITLE_TEMPLATE = "%s - Magazynier";
-const APP_DESCRIPTION = "Best PWA app in the world!";
+const APP_DESCRIPTION = "Magazynier - aplikacja do zarządzania domowym magazynem";
 
 export const metadata = {
   applicationName: APP_NAME,
   title: APP_DEFAULT_TITLE,
-  // {
-  //   default: APP_DEFAULT_TITLE,
-  //   template: APP_TITLE_TEMPLATE,
-  // },
   description: APP_DESCRIPTION,
   manifest: "/manifest.json",
   mobileWebAppCapable: "yes",
@@ -61,10 +49,6 @@ export default function RootLayout({ children }) {
   return (
     <html lang="pl" className="dark">
       <head>
-        {/* <title>{metadata.title}</title> */}
-        {/* <meta name="description" content={metadata.description} /> */}
-        {/* <link rel="icon" href="/favicon.ico" /> */}
-
         <link
           rel="apple-touch-icon"
           sizes="180x180"
@@ -91,7 +75,7 @@ export default function RootLayout({ children }) {
           <div className="md:container md:mx-auto md:px-24">
             <Header />
             <Nav />
-            <div className="flex flex-col gap-2 mt-5 p-1">{children}</div>
+            <div className="flex flex-col gap-2 mt-3 p-1">{children}</div>
           </div>
           <ToastContainer autoClose={700} />
         </Providers>
